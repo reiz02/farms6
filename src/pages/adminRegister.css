@@ -5,11 +5,11 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0f172a, #1f2937, #020617);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #46a381, #318265); 
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
-/* ===== ADMIN CARD ===== */
+/* ===== ADMIN CARD WRAPPER ===== */
 .admin-setup-container {
   width: 100%;
   display: flex;
@@ -20,78 +20,115 @@ body {
 .admin-card {
   width: 420px;
   padding: 40px;
-  border-radius: 18px;
-  background: rgba(31, 41, 55, 0.95);
-  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.6);
-  color: #f3f4f6;
-  animation: fadeIn 0.4s ease;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
   text-align: center;
+  animation: fadeIn 0.6s ease-out;
 }
 
-.admin-card h2 {
-  margin-bottom: 15px;
+/* ===== LOGO / BRANDING ===== */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.system-name {
+  font-size: 34px;
+  font-weight: 800;
+  color: #57b894;
+  margin: 0;
+  letter-spacing: -1.5px;
+}
+
+.system-name span {
+  color: #2c3e50;
+}
+
+/* ===== HEADER SECTION & BADGE ===== */
+.header-section {
+  margin-bottom: 25px;
+}
+
+.header-section h2 {
+  margin-bottom: 8px;
   font-size: 24px;
+  font-weight: 700;
+  color: #2d3436;
 }
 
-.admin-card p {
-  font-size: 14px;
-  margin-bottom: 20px;
+.restricted-badge {
+  display: inline-block;
   color: #f87171;
+  background-color: #fff1f1; /* Light red fill para mas malinis */
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.sub-text {
+  font-size: 14px;
+  color: #636e72;
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* ===== INPUT FIELDS ===== */
 .admin-card input {
   width: 100%;
-  height: 45px;
-  margin-bottom: 12px;
-  padding: 10px 14px;
+  height: 52px;
+  margin-bottom: 15px;
+  padding: 0 20px;
   font-size: 15px;
-  border-radius: 10px;
-  border: 1px solid #374151;
-  background: #1f2937;
-  color: #f3f4f6;
-  transition: all 0.25s ease;
-}
-
-.admin-card input::placeholder {
-  color: #9ca3af;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #f8f9fa;
+  color: #2d3436;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .admin-card input:focus {
   outline: none;
-  border-color: #2563eb;
-  background: #111827;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  border-color: #57b894;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(87, 184, 148, 0.1);
 }
 
-/* ===== BUTTON ===== */
+/* ===== DARK GREEN BUTTON ===== */
 .admin-btn {
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 16px;
+  border-radius: 12px;
   border: none;
   margin-top: 10px;
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background-color: #1e4d3a;
   color: #ffffff;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
 }
 
 .admin-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.4);
+  background-color: #2d6b52;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 15px rgba(30, 77, 58, 0.2);
 }
 
 /* ===== DIALOG / MODAL ===== */
 .dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -99,57 +136,14 @@ body {
 }
 
 .dialog-box {
-  background: #1f2937;
-  padding: 25px 30px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
+  background: #fff;
+  padding: 35px;
+  border-radius: 20px;
+  width: 350px;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  color: #f3f4f6;
 }
 
-.dialog-box h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #f87171;
-}
-
-.dialog-box p {
-  margin-bottom: 20px;
-  color: #f3f4f6;
-}
-
-.dialog-box button {
-  padding: 8px 18px;
-  border: none;
-  background: #2563eb;
-  color: #fff;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.dialog-box button:hover {
-  background: #1e40af;
-}
-
-/* ===== CARD ANIMATION ===== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 480px) {
-  .admin-card {
-    width: 90%;
-    padding: 30px;
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

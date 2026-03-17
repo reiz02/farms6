@@ -8,7 +8,7 @@ const cron = require("node-cron");
 const fs = require('fs');
 const dns = require('dns');
 
-// 🔥 DNS Fix
+// 🔥 DNS Fix para sa MongoDB Atlas connectivity issues
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const app = express();
@@ -107,7 +107,7 @@ const inventoryAccess = async (req, res, next) => {
 };
 
 // ===========================
-// AUTH ROUTES
+// AUTH & USER PROFILE ROUTES
 // ===========================
 
 // EMPLOYEE REGISTER
@@ -133,34 +133,31 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// ADMIN REGISTER (Updated: Idinagdag ito)
+// ADMIN REGISTER
 app.post("/api/register-admin", async (req, res) => {
   try {
     const { firstName, middleName, lastName, email, password } = req.body;
-    
     const existing = await User.findOne({ email: email.trim().toLowerCase() });
     if (existing) return res.status(400).json({ error: "Email exists" });
 
     const hashed = await bcrypt.hash(password, 10);
     const adminUser = new User({
-      firstName, 
-      middleName, 
-      lastName,
+      firstName, middleName, lastName,
       email: email.trim().toLowerCase(),
       password: hashed,
-      role: "admin",      // Naka-set sa Admin
-      status: "approved", // Auto-approved para sa admin
+      role: "admin",
+      status: "approved",
       section: "Management"
     });
 
     await adminUser.save();
     res.status(201).json({ message: "Admin registered successfully!" });
   } catch (err) {
-    console.error("Admin Reg Error:", err);
     res.status(500).json({ error: "Admin registration failed" });
   }
 });
 
+// LOGIN
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -177,12 +174,52 @@ app.post("/api/login", async (req, res) => {
         id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
+        email: user.email, 
         role: user.role,
         section: user.section,
       },
     });
   } catch (err) {
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// ✏️ UPDATE USER NAME (Ang in-update na route)
+app.put("/api/users/update-name", async (req, res) => {
+  try {
+    const { email, firstName, lastName } = req.body;
+    
+    // Server-side validation
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: "First name and Last name are required" });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { email: email.trim().toLowerCase() },
+      { 
+        firstName: firstName.trim(), 
+        lastName: lastName.trim() 
+      },
+      { new: true } // I-return ang updated version ng document
+    );
+
+    if (!updatedUser) return res.status(404).json({ error: "User not found" });
+
+    // I-return ang buong user object para ma-update ang state at localStorage sa frontend
+    res.json({
+      message: "Name updated successfully",
+      user: {
+        id: updatedUser._id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        section: updatedUser.section,
+      }
+    });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Failed to update name" });
   }
 });
 

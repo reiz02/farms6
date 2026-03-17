@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./register.css";
+import "./register.css"; // Dito kukuha ng styles ang Login card
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -37,7 +37,6 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("isLoggedIn", "true");
 
@@ -61,11 +60,14 @@ function Login() {
 
   return (
     <div className="register-container">
+      {/* Branding Section - Logo icon removed for clean text branding */}
+      <div className="logo-container">
+        <h1 className="system-name">Farm<span>Ops</span></h1>
+      </div>
 
       <h2>Login</h2>
 
       <form onSubmit={handleSubmit}>
-
         <label>Email</label>
         <input
           type="email"
@@ -84,29 +86,32 @@ function Login() {
           required
         />
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" className="register-btn" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
-
       </form>
 
       <p style={{ marginTop: "15px" }}>
-        <Link to="/register">Register</Link>
+        <Link to="/register" className="back-link">Don't have an account? Register</Link>
       </p>
 
       {dialog.show && (
         <div className="dialog-overlay">
           <div className={`dialog-box ${dialog.type}`}>
-            <h3>{dialog.type === "error" ? "Error" : "Success"}</h3>
+            <h3 style={{ color: dialog.type === "success" ? "#57b894" : "#f87171" }}>
+              {dialog.type === "error" ? "Error" : "Success"}
+            </h3>
             <p>{dialog.message}</p>
-
-            {dialog.type === "error" && (
-              <button onClick={closeDialog}>Close</button>
-            )}
+            <button 
+              onClick={closeDialog} 
+              className="register-btn" 
+              style={{ width: "auto", padding: "8px 25px" }}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
-
     </div>
   );
 }

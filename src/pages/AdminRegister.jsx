@@ -30,22 +30,20 @@ function AdminRegister() {
       try {
         data = await response.json();
       } catch {
-        throw new Error("Server returned invalid response.");
+        throw new Error("Server error.");
       }
 
       if (response.ok) {
         setDialog({ show: true, title: "Success", message: data.message });
         setTimeout(() => navigate("/"), 2500);
       } else {
-        setDialog({ show: true, title: "Error", message: data.error || "Failed to register" });
+        setDialog({ show: true, title: "Error", message: data.error || "Registration failed" });
       }
     } catch (err) {
-      console.error("Connection Error:", err);
       setDialog({
         show: true,
-        title: "Connection Error",
-        message:
-          "Could not reach the server. Make sure the backend is running on http://localhost:5000.",
+        title: "Error",
+        message: "Could not connect to the server.",
       });
     } finally {
       setLoading(false);
@@ -55,10 +53,18 @@ function AdminRegister() {
   return (
     <div className="admin-setup-container">
       <div className="admin-card">
-        <h2>Admin Registration</h2>
-        <p>Restricted Access</p>
+        {/* FarmOps Branding */}
+        <div className="logo-container">
+          <h1 className="system-name">Farm<span>Ops</span></h1>
+        </div>
 
-        <form onSubmit={handleAdminSubmit}>
+        <div className="header-section">
+          <h2>Admin Registration</h2>
+          <div className="restricted-badge">Restricted Access</div>
+          <p className="sub-text">Create an account to manage your farm operations.</p>
+        </div>
+
+        <form onSubmit={handleAdminSubmit} autoComplete="off">
           <input
             type="text"
             placeholder="First Name"
@@ -81,7 +87,7 @@ function AdminRegister() {
           />
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -94,7 +100,7 @@ function AdminRegister() {
             required
           />
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" className="admin-btn" disabled={loading}>
             {loading ? "Registering..." : "Register Admin"}
           </button>
         </form>
@@ -103,7 +109,9 @@ function AdminRegister() {
       {dialog.show && (
         <div className="dialog-overlay">
           <div className="dialog-box">
-            <h3>{dialog.title}</h3>
+            <h3 style={{ color: dialog.title === "Success" ? "#57b894" : "#f87171" }}>
+              {dialog.title}
+            </h3>
             <p>{dialog.message}</p>
             <button
               onClick={() => {

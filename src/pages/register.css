@@ -5,200 +5,146 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0f172a, #1f2937, #020617);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  /* Green gradient background gaya ng Admin Register */
+  background: linear-gradient(135deg, #46a381, #318265); 
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
 }
 
 /* ===== REGISTER CARD ===== */
 .register-container {
   width: 420px;
-  padding: 40px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.35);
-  animation: fadeIn 0.4s ease;
-}
-
-/* ===== ADMIN REGISTER CARD ===== */
-.admin-setup-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.admin-card {
-  background: #1f2937;
-  color: #fff;
-  padding: 40px;
-  border-radius: 18px;
-  width: 400px;
-  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.35);
-  animation: fadeIn 0.4s ease;
-}
-
-.admin-card h2 {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.admin-card p {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #fbbf24;
-}
-
-/* ===== TITLE ===== */
-.register-container h2 {
-  text-align: center;
-  margin-bottom: 25px;
-  color: #0f172a;
-  font-size: 24px;
-}
-
-/* ===== INPUT FIELDS ===== */
-.register-container input,
-.register-container select,
-.admin-card input {
-  width: 100%;
-  height: 45px;
-  margin-bottom: 14px;
-  padding: 10px 14px;
-  font-size: 15px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  transition: all 0.25s ease;
-}
-
-.admin-card input {
-  border: none;
-  background: #374151;
-  color: #fff;
-}
-
-.admin-card input::placeholder {
-  color: #d1d5db;
-}
-
-/* ===== PLACEHOLDER ===== */
-input::placeholder {
-  color: #9ca3af;
-}
-
-/* ===== INPUT FOCUS ===== */
-input:focus,
-select:focus,
-.admin-card input:focus {
-  outline: none;
-  border-color: #2563eb;
+  padding: 45px;
+  border-radius: 28px;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  animation: fadeIn 0.6s ease-out;
 }
 
-.admin-card input:focus {
-  background: #4b5563;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+/* ===== LOGO / BRANDING (Consistent with Admin) ===== */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-/* ===== SECTION LABEL ===== */
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background-color: #57b894;
+  border-radius: 8px;
+  margin-right: 12px;
+}
+
+.system-name {
+  font-size: 34px;
+  font-weight: 800;
+  color: #57b894; /* Green for "Farm" */
+  margin: 0;
+  letter-spacing: -1.5px;
+}
+
+.system-name span {
+  color: #2c3e50; /* Dark Slate for "Ops" */
+}
+
+/* ===== TEXT STYLES ===== */
+.register-container h2 {
+  margin: 10px 0 5px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3436;
+}
+
+.register-container .sub-text {
+  font-size: 14px;
+  margin-bottom: 25px;
+  color: #636e72;
+  line-height: 1.4;
+}
+
+/* ===== INPUT & SELECT FIELDS ===== */
+.register-container input,
+.register-container select {
+  width: 100%;
+  height: 52px;
+  margin-bottom: 15px;
+  padding: 0 20px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #f8f9fa;
+  color: #2d3436;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.register-container select {
+  cursor: pointer;
+}
+
+.register-container input:focus,
+.register-container select:focus {
+  outline: none;
+  border-color: #57b894;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(87, 184, 148, 0.1);
+}
+
 .register-container label {
+  display: block;
+  text-align: left;
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  margin-top: 6px;
+  margin-bottom: 5px;
+  padding-left: 5px;
 }
 
-/* ===== ERROR MESSAGE ===== */
-.error-message {
-  color: #ef4444;
-  font-size: 14px;
-  margin-top: -5px;
-  margin-bottom: 10px;
-  text-align: center;
+/* ===== DARK GREEN BUTTON ===== */
+.register-btn {
+  width: 100% !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  margin-top: 10px !important;
+  background-color: #1e4d3a !important; /* DARK GREEN para sa employee */
+  background: #1e4d3a !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
 }
 
-/* ===== BUTTON ===== */
-button,
-.admin-card button {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  margin-top: 10px;
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.admin-card button {
-  margin-top: 10px;
-}
-
-/* ===== BUTTON HOVER ===== */
-button:hover,
-.admin-card button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.4);
-}
-
-/* ===== BUTTON CLICK ===== */
-button:active,
-.admin-card button:active {
-  transform: translateY(0);
+.register-btn:hover {
+  background-color: #2d6b52 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 15px rgba(30, 77, 58, 0.2) !important;
 }
 
 /* ===== BACK TO LOGIN LINK ===== */
-.register-container a {
+.back-link {
   display: block;
-  text-align: center;
-  margin-top: 18px;
+  margin-top: 20px;
   text-decoration: none;
   font-size: 14px;
-  color: #2563eb;
-  font-weight: 500;
+  color: #57b894;
+  font-weight: 600;
 }
 
-.register-container a:hover {
+.back-link:hover {
   text-decoration: underline;
 }
 
-/* ===== CARD ANIMATION ===== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 480px) {
-  .register-container {
-    width: 90%;
-    padding: 30px;
-  }
-
-  .admin-card {
-    width: 90%;
-    padding: 30px;
-  }
-}
-
-/* ===== DIALOG / MODAL ===== */
+/* ===== DIALOG / MODAL (Consistent) ===== */
 .dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0,0,0,0.5);
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -207,55 +153,23 @@ button:active,
 
 .dialog-box {
   background: #fff;
-  padding: 25px 30px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
+  padding: 35px;
+  border-radius: 20px;
+  width: 350px;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-}
-
-.dialog-box h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #ef4444;
-}
-
-.dialog-box.success h3 {
-  color: #10b981;
-}
-
-.dialog-box p {
-  margin-bottom: 20px;
-  color: #333;
 }
 
 .dialog-box button {
-  padding: 8px 18px;
+  background: #1e4d3a;
+  color: white;
   border: none;
-  background: #2563eb;
-  color: #fff;
-  border-radius: 8px;
+  padding: 12px 30px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 600;
+  margin-top: 20px;
 }
 
-.dialog-box button:hover {
-  background: #1e40af;
-}
-
-.otp-container{
- display:flex;
- gap:10px;
- justify-content:center;
- margin:15px 0;
-}
-
-.otp-box{
- width:40px;
- height:45px;
- text-align:center;
- font-size:20px;
- border:1px solid #ccc;
- border-radius:5px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
