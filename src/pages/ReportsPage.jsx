@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { FaTrash, FaPlus, FaHistory, FaCalendarAlt, FaCheckCircle } from "react-icons/fa";
 
 const ReportsPage = () => {
   const [amount, setAmount] = useState("");
-  
-  // Helper function to get today's date in YYYY-MM-DD format based on local time
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState("Income");
+
   const getTodayString = () => {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return today.toISOString().split("T")[0];
   };
 
   const today = getTodayString();
@@ -17,7 +16,6 @@ const ReportsPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  // Get user from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
 
   const fetchSubmissions = useCallback(async () => {
@@ -26,7 +24,6 @@ const ReportsPage = () => {
       if (!res.ok) throw new Error("Server error");
 
       const data = await res.json();
-      // Filter based on logged-in user
       const filtered = data.filter(item => item.employeeEmail === user?.email);
       setSubmissions(filtered);
     } catch (err) {
@@ -38,26 +35,8 @@ const ReportsPage = () => {
     if (user?.email) fetchSubmissions();
   }, [fetchSubmissions, user?.email]);
 
-  // Logic to prevent manual typing of future dates
-  const handleDateChange = (e) => {
-    const inputDate = e.target.value;
-    if (inputDate > today) {
-      alert("You cannot select a future date.");
-      setSelectedDate(today); // Revert to today
-    } else {
-      setSelectedDate(inputDate);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Final Validation Guard
-    if (selectedDate > today) {
-      alert("Invalid date. Please select a past or present date.");
-      return;
-    }
-
     if (!amount || !selectedDate) return;
 
     try {
@@ -65,17 +44,24 @@ const ReportsPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employeeEmail: user.email, 
+          employeeEmail: user.email,
           amount: Number(amount),
-          date: selectedDate // Saving the specific income date
+          date: selectedDate,
+          description,
+          type,
+          encodedBy: user.email,
+          role: user.role
         })
       });
 
       if (response.ok) {
         setAmount("");
-        setSelectedDate(today); // Reset to current date
-        await fetchSubmissions(); 
+        setDescription("");
+        setType("Income");
+        setSelectedDate(today);
+        await fetchSubmissions();
         setShowSuccessDialog(true);
+        setTimeout(() => setShowSuccessDialog(false), 3000);
       }
     } catch (err) {
       console.error("Submit error:", err);
@@ -84,125 +70,106 @@ const ReportsPage = () => {
 
   const deleteRecord = async (id) => {
     if (window.confirm("Are you sure you want to delete this record?")) {
-      await fetch(`http://localhost:5000/api/earnings/${id}`, { method: "DELETE" });
+      await fetch(`http://localhost:5000/api/earnings/${id}`, {
+        method: "DELETE"
+      });
       fetchSubmissions();
     }
   };
 
+  // Internal Styles to match Dashboard
+  const styles = {
+    container: { padding: "30px 40px", fontFamily: "'Inter', sans-serif", color: "#333" },
+    card: { background: "#fff", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", marginBottom: "30px" },
+    title: { fontSize: "18px", fontWeight: "bold", marginBottom: "20px", color: "#1f2933", display: "flex", alignItems: "center", gap: "10px" },
+    formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", alignItems: "flex-end" },
+    inputGroup: { display: "flex", flexDirection: "column", gap: "8px" },
+    label: { fontSize: "13px", fontWeight: "600", color: "#666" },
+    input: { padding: "10px", borderRadius: "6px", border: "1px solid #ddd", fontSize: "14px", outline: "none" },
+    submitBtn: { background: "#57b894", color: "white", border: "none", padding: "11px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "0.3s" },
+    table: { width: "100%", borderCollapse: "collapse", marginTop: "10px", textAlign: "left" },
+    th: { background: "#f8f9fc", padding: "12px 15px", borderBottom: "2px solid #e3e6f0", color: "#4e73df", fontSize: "13px", textTransform: "uppercase" },
+    td: { padding: "12px 15px", borderBottom: "1px solid #eee", fontSize: "14px" },
+    badgeIncome: { background: "#e1f5fe", color: "#0288d1", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" },
+    badgeExpense: { background: "#ffebee", color: "#d32f2f", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" },
+    deleteBtn: { color: "#ff6b6b", border: "none", background: "none", cursor: "pointer", fontSize: "16px" }
+  };
+
   return (
-    <div style={{ padding: "40px", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: "#f4f7f6", minHeight: "100vh" }}>
-      <h2 style={{ color: "#333" }}>Reports (Admin View)</h2>
-
-      <div style={{ 
-        backgroundColor: "white", 
-        padding: "30px", 
-        borderRadius: "12px", 
-        boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
-        maxWidth: "600px"
-      }}>
-        <h3 style={{ marginTop: 0, fontSize: "18px" }}>Submit Daily Income</h3>
-        <p style={{ fontSize: "14px", color: "#666" }}>Logged in as: <strong>{user?.email}</strong></p>
-        
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px", color: "#444" }}>
-              Select Date:
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              max={today} // Disables future dates in the calendar picker
-              onChange={handleDateChange}
-              required
-              style={{ 
-                width: "100%", 
-                padding: "12px", 
-                borderRadius: "6px", 
-                border: "1px solid #ddd",
-                fontSize: "16px",
-                outlineColor: "#4f73df"
-              }}
-            />
+    <div style={styles.container}>
+      {/* FORM CARD */}
+      <div style={styles.card}>
+        <div style={styles.title}><FaPlus /> Submit Daily Report</div>
+        <form onSubmit={handleSubmit} style={styles.formGrid}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Date</label>
+            <input style={styles.input} type="date" value={selectedDate} max={today} onChange={(e) => setSelectedDate(e.target.value)} />
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px", color: "#444" }}>
-              Daily Income:
-            </label>
-            <input
-              type="number"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              style={{ 
-                width: "100%", 
-                padding: "12px", 
-                borderRadius: "6px", 
-                border: "1px solid #ddd",
-                fontSize: "16px",
-                outlineColor: "#4f73df"
-              }}
-            />
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Description</label>
+            <input style={styles.input} type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Sales, Feeds" />
           </div>
 
-          <button type="submit" style={{ 
-            width: "100%", 
-            padding: "14px", 
-            backgroundColor: "#4f73df", 
-            color: "white", 
-            border: "none", 
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "16px",
-            transition: "background 0.3s"
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#3e5fcb"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "#4f73df"}
-          >
-            Submit Income
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Type</label>
+            <select style={styles.input} value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="Income">Income</option>
+              <option value="Expense">Expense</option>
+            </select>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Amount (₱)</label>
+            <input style={styles.input} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          </div>
+
+          <button type="submit" style={styles.submitBtn}>
+            <FaCheckCircle /> Submit Report
           </button>
         </form>
       </div>
 
-      <div style={{ marginTop: "50px" }}>
-        <h3 style={{ borderBottom: "2px solid #4f73df", display: "inline-block", paddingBottom: "5px" }}>
-          Submission History
-        </h3>
-        <div style={{ backgroundColor: "white", borderRadius: "12px", overflow: "hidden", marginTop: "20px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      {/* TABLE CARD */}
+      <div style={styles.card}>
+        <div style={styles.title}><FaHistory /> Submission History</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={styles.table}>
             <thead>
-              <tr style={{ textAlign: "left", backgroundColor: "#f8f9fc", color: "#4f73df" }}>
-                <th style={{ padding: "15px" }}>Employee</th>
-                <th style={{ padding: "15px" }}>Amount</th>
-                <th style={{ padding: "15px" }}>Date of Income</th>
-                <th style={{ padding: "15px" }}>Actions</th>
+              <tr>
+                <th style={styles.th}>Date</th>
+                <th style={styles.th}>Description</th>
+                <th style={styles.th}>Type</th>
+                <th style={styles.th}>Amount</th>
+                <th style={styles.th}>Role</th>
+                <th style={styles.th}>Action</th>
               </tr>
             </thead>
             <tbody>
               {submissions.length > 0 ? (
                 submissions.map((item) => (
-                  <tr key={item._id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "15px" }}>{item.employeeEmail}</td>
-                    <td style={{ padding: "15px", fontWeight: "bold" }}>₱{item.amount.toLocaleString()}</td>
-                    <td style={{ padding: "15px" }}>
-                      {/* Uses saved date, falls back to creation date if missing */}
-                      {item.date ? new Date(item.date).toLocaleDateString() : new Date(item.createdAt).toLocaleDateString()}
+                  <tr key={item._id}>
+                    <td style={styles.td}>{new Date(item.date || item.createdAt).toLocaleDateString()}</td>
+                    <td style={styles.td}>{item.description || "-"}</td>
+                    <td style={styles.td}>
+                      <span style={item.type === "Expense" ? styles.badgeExpense : styles.badgeIncome}>
+                        {item.type || "Income"}
+                      </span>
                     </td>
-                    <td style={{ padding: "15px" }}>
-                      <button 
-                        onClick={() => deleteRecord(item._id)} 
-                        style={{ color: "#e74a3b", border: "none", background: "none", cursor: "pointer", fontWeight: "600" }}
-                      >
-                        Delete
+                    <td style={{ ...styles.td, fontWeight: "bold" }}>₱{item.amount.toLocaleString()}</td>
+                    <td style={styles.td}><small style={{color: "#888"}}>{item.role || "employee"}</small></td>
+                    <td style={styles.td}>
+                      <button onClick={() => deleteRecord(item._id)} style={styles.deleteBtn} title="Delete Record">
+                        <FaTrash />
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>No submissions found.</td>
+                  <td colSpan="6" style={{ ...styles.td, textAlign: "center", color: "#999", padding: "40px" }}>
+                    No reports submitted yet.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -210,35 +177,9 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* Success Dialog */}
       {showSuccessDialog && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
-          justifyContent: "center", alignItems: "center", zIndex: 1000
-        }}>
-          <div style={{
-            background: "white", padding: "40px", borderRadius: "15px",
-            width: "350px", textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
-          }}>
-            <div style={{ fontSize: "50px", color: "#1cc88a", marginBottom: "15px" }}>✓</div>
-            <h3 style={{ margin: "0 0 10px 0" }}>Success!</h3>
-            <p style={{ color: "#666", marginBottom: "25px" }}>Income record has been added.</p>
-            <button
-              onClick={() => setShowSuccessDialog(false)}
-              style={{ 
-                padding: "10px 40px", 
-                borderRadius: "6px", 
-                border: "none", 
-                backgroundColor: "#4f73df", 
-                color: "white", 
-                fontWeight: "bold",
-                cursor: "pointer" 
-              }}
-            >
-              OK
-            </button>
-          </div>
+        <div style={{ position: "fixed", bottom: "20px", right: "20px", background: "#57b894", color: "white", padding: "15px 25px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: "10px", zIndex: 9999 }}>
+          <FaCheckCircle /> Record added successfully!
         </div>
       )}
     </div>

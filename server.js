@@ -89,7 +89,19 @@ const productSchema = new mongoose.Schema(
 const Product = mongoose.model("Product", productSchema);
 
 const earningsSchema = new mongoose.Schema(
-  { employeeEmail: String, amount: Number, month: Number, year: Number },
+  { 
+    employeeEmail: String, 
+    amount: Number, 
+    month: Number, 
+    year: Number,
+
+    // NEW FIELDS
+    date: String,
+    description: String,
+    type: String,
+    encodedBy: String,
+    role: String
+  },
   { timestamps: true }
 );
 const Earnings = mongoose.model("Earnings", earningsSchema);
@@ -383,17 +395,28 @@ app.get("/api/earnings", async (req, res) => {
 
 app.post("/api/earnings", async (req, res) => {
   try {
-    const { employeeEmail, amount, date } = req.body;
-    const now = date ? new Date(date) : new Date();
-    const today = now.toISOString().split("T")[0]; // use ISO date
+    const { employeeEmail, amount, date, description, type, encodedBy, role } = req.body;
 
-    if (isNaN(Number(amount))) return res.status(400).json({ error: "Invalid amount" });
+    const now = date ? new Date(date) : new Date();
+    const today = now.toISOString().split("T")[0];
+
+    if (isNaN(Number(amount))) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
 
     await new Earnings({
       employeeEmail,
       amount: Number(amount),
       month: now.getMonth() + 1,
       year: now.getFullYear(),
+
+      // NEW DATA
+      date: today,
+      description: description || "",
+      type: type || "Income",
+      encodedBy: encodedBy || employeeEmail,
+      role: role || "employee",
+
       createdAt: now,
       updatedAt: now
     }).save();
@@ -407,23 +430,35 @@ app.post("/api/earnings", async (req, res) => {
     if (!report.dailyHistory) report.dailyHistory = [];
     if (!report.monthlyHistory) report.monthlyHistory = [];
 
-    // DAILY
     const dailyIndex = report.dailyHistory.findIndex(d => d.date === today);
-    if (dailyIndex >= 0) report.dailyHistory[dailyIndex].total += Number(amount);
-    else report.dailyHistory.push({ date: today, total: Number(amount) });
+    if (dailyIndex >= 0) {
+      report.dailyHistory[dailyIndex].total += Number(amount);
+    } else {
+      report.dailyHistory.push({ date: today, total: Number(amount) });
+    }
 
-    // MONTHLY
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
-    const monthlyIndex = report.monthlyHistory.findIndex(m => m.month === month && m.year === year);
-    if (monthlyIndex >= 0) report.monthlyHistory[monthlyIndex].total = report.monthlyEarnings;
-    else report.monthlyHistory.push({ month, year, total: report.monthlyEarnings });
+
+    const monthlyIndex = report.monthlyHistory.findIndex(
+      m => m.month === month && m.year === year
+    );
+
+    if (monthlyIndex >= 0) {
+      report.monthlyHistory[monthlyIndex].total = report.monthlyEarnings;
+    } else {
+      report.monthlyHistory.push({
+        month,
+        year,
+        total: report.monthlyEarnings
+      });
+    }
 
     await report.save();
 
-    res.json({ message: "Income recorded (PHP)" });
+    res.json({ message: "Income recorded (UPDATED)" });
   } catch (err) {
-    console.error("Submit earnings error:", err);
+    console.error(err);
     res.status(500).json({ error: "Submit failed" });
   }
 });
@@ -532,7 +567,7 @@ cron.schedule("0 0 1 * *", async () => {
   }
 }, { timezone: "Asia/Manila" });
 
-// ===========================
+// ===========================  
 // SERVER START
 // ===========================
 app.get("/", (req, res) => res.send("🚀 FarmOps Server Running"));

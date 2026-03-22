@@ -10,7 +10,7 @@ import EmployeePage from "./EmployeePage";
 import EmployeeEarnings from "./EmployeeEarnings";
 import DailyEarnings from "./DailyEarnings";
 import TotalEarningsCard from "./TotalEarningsCard";
-
+import ReportsPage from "./ReportsPage";
 function Dashboard() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
@@ -197,9 +197,18 @@ function Dashboard() {
               <FaBox /> Inventory
             </div>
           )}
-          <div onClick={() => setPage("reports")} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", color: page === "reports"? "#4e73df" : "#fff" }}>
-            <FaChartLine /> Reports
-          </div>
+          <div 
+  onClick={() => setPage("reports")} 
+  style={{ 
+    display: "flex", 
+    alignItems: "center", 
+    gap: "10px", 
+    cursor: "pointer", 
+    color: page === "reports" ? "#4e73df" : "#fff" 
+  }}
+>
+  <FaChartLine /> Reports
+</div>
           <div onClick={handleLogout} style={{ cursor: "pointer", marginTop: "auto", color: "#ff6b6b", display: "flex", alignItems: "center", gap: "10px" }}>
             <FaSignOutAlt /> Logout
           </div>
@@ -253,110 +262,9 @@ function Dashboard() {
 
         {page === "employees" && role === "admin" && <EmployeePage />}
         {page === "stock" && (section === "Inventory" || role === "admin") && <StockPage />}
-
-        {page === "reports" && (role === "admin" ? (
-          <div style={{ padding: "40px" }}>
-            <h2>Reports (Admin View)</h2>
-            <div style={{ background: "#fff", padding: "20px", borderRadius: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
-              <h3>Submit Daily Income</h3>
-              <div style={{ marginBottom: "10px" }}>
-                <label style={{ marginRight: "10px" }}>Select Date:</label>
-                <input 
-                  type="date" 
-                  value={reportDate} 
-                  onChange={e => setReportDate(e.target.value)} 
-                  style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ddd" }}
-                />
-              </div>
-
-              <input
-                type="number"
-                placeholder="Daily Income"
-                value={earnings}
-                onChange={e => setEarnings(e.target.value)}
-                style={{ padding: "10px", width: "200px", marginRight: "10px", border: "1px solid #ddd", borderRadius: "4px" }}
-              />
-              <button
-                onClick={submitEarnings}
-                style={{ padding: "10px 20px", background: "#4e73df", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}
-              >Submit</button>
-
-              <div style={{ marginTop: "30px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
-                <h3>Submission History</h3>
-                <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f4f6f8", textAlign: "left", color: "#4e73df" }}>
-                      <th style={{ padding: "12px" }}>Employee</th>
-                      <th style={{ padding: "12px" }}>Amount</th>
-                      <th style={{ padding: "12px" }}>Date</th>
-                      {role === "admin" && <th style={{ padding: "12px", textAlign: "center" }}>Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {submissions.map(item => (
-                      <tr key={item._id} style={{ borderBottom: "1px solid #eee" }}>
-                        <td style={{ padding: "12px" }}>{item.employeeEmail}</td>
-                        <td style={{ padding: "12px", fontWeight: "bold" }}>
-                          {item.isEditing ? (
-                            <input
-                              type="number"
-                              value={item.editAmount}
-                              onChange={e => {
-                                const updated = submissions.map(s =>
-                                  s._id === item._id ? { ...s, editAmount: e.target.value } : s
-                                );
-                                setSubmissions(updated);
-                              }}
-                              style={{ width: "100px", padding: "4px" }}
-                            />
-                          ) : (
-                            `₱${item.amount.toLocaleString()}`
-                          )}
-                        </td>
-                        <td style={{ padding: "12px" }}>{new Date(item.createdAt).toLocaleDateString()}</td>
-                        {role === "admin" && (
-                          <td style={{ padding: "12px", textAlign: "center" }}>
-                            {item.isEditing ? (
-                              <>
-                                <button
-                                  onClick={() => saveEdit(item._id, item.editAmount)}
-                                  style={{ marginRight: "5px", cursor: "pointer", color: "#4e73df", background: "none", border: "none" }}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => cancelEdit(item._id)}
-                                  style={{ cursor: "pointer", color: "#888", background: "none", border: "none" }}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => startEdit(item._id)}
-                                  style={{ marginRight: "5px", cursor: "pointer", color: "#1cc88a", background: "none", border: "none" }}
-                                >
-                                  Edit
-                                </button>
-                                <button onClick={() => openDeleteDialog(item._id)} style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer" }}>
-                                  <FaTrash />
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <EmployeeEarnings onSubmissionSuccess={fetchData} />
-        ))}
-
+{/* Pagkatapos ng StockPage or EmployeePage logic, idagdag ito: */}
+{page === "reports" && <ReportsPage />}
+ 
         {showDeleteModal && (
           <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ background: "white", padding: "30px", borderRadius: "10px", width: "400px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>

@@ -65,12 +65,19 @@ const EmployeeEarnings = () => {
       const response = await fetch("http://localhost:5000/api/earnings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeEmail: user.email,
-          amount: Number(amount),
-          date: reportDate,
-          timestamp: new Date().toISOString() // exact time tracking
-        })
+       body: JSON.stringify({
+  employeeEmail: user.email,
+  amount: Number(amount),
+  date: reportDate,
+
+  // NEW
+  description: "Employee submission",
+  type: "Income",
+  encodedBy: user.email,
+  role: user.role,
+
+  timestamp: new Date().toISOString()
+})
       });
 
       if (response.ok) {
