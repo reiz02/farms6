@@ -23,40 +23,50 @@ function Dashboard() {
   const [earnings, setEarnings] = useState("");
 
   const [reportData, setReportData] = useState({
-  dailyEarnings: 0,
-  dailyHistory: []
-});
+    dailyEarnings: 0,
+    dailyHistory: []
+  });
   const [submissions, setSubmissions] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
+  const [showValidationDialog, setShowValidationDialog] = useState(false);//NEW
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]); // default today
+  const [showDateValidationDialog, setShowDateValidationDialog] = useState(false);
+
+  
+
   // Fetch report and earnings data
   const fetchData = useCallback(async () => {
-  try {
-    const [reportRes, historyRes] = await Promise.all([
-      fetch("http://localhost:5000/api/reports"),
-      fetch("http://localhost:5000/api/earnings")
-    ]);
+    try {
+      const [reportRes, historyRes] = await Promise.all([
+        fetch("http://localhost:5000/api/reports"),
+        fetch("http://localhost:5000/api/earnings")
+      ]);
 
-    const reportJson = await reportRes.json();
-    const historyJson = await historyRes.json();
+      const reportJson = await reportRes.json();
+      const historyJson = await historyRes.json();
 
-    const formattedDaily = (reportJson.dailyHistory || []).map(d => ({
-      date: d.date,
-      amount: d.total
-    }));
+      const formattedDaily = (reportJson.dailyHistory || []).map(d => ({
+        date: d.date,
+        amount: d.total
+      }));
 
-    setReportData({
-      dailyEarnings: reportJson.dailyEarnings || 0,
-      dailyHistory: formattedDaily
-    });
+      setReportData({
+        dailyEarnings: reportJson.dailyEarnings || 0,
+        dailyHistory: formattedDaily
+      });
 
-    setSubmissions(historyJson || []);
+      // Only set submissions if none are currently being edited
+      setSubmissions(prev => {
+        const isEditing = prev.some(s => s.isEditing);
+        return isEditing ? prev : historyJson || [];
+      });
 
-  } catch (err) {
-    console.error("Data fetch error:", err);
-  }
-}, []);
+    } catch (err) {
+      console.error("Data fetch error:", err);
+    }
+  }, []);
 
   // Initial login check and data fetch
   useEffect(() => {
@@ -64,19 +74,14 @@ function Dashboard() {
     else fetchData();
   }, [isLoggedIn, navigate, user, fetchData]);
 
-  // Page change triggers data fetch
-  useEffect(() => {
-    if (page === "dashboard" || page === "reports") fetchData();
-  }, [page, fetchData]);
-
   // Timer
   useEffect(() => {
-  const clock = setInterval(() => {
-    setIntervalTime(new Date());
-  }, 1000);
+    const clock = setInterval(() => {
+      setIntervalTime(new Date());
+    }, 1000);
 
-  return () => clearInterval(clock);
-}, []);
+    return () => clearInterval(clock);
+  }, []);
 
   if (!user || isLoggedIn !== "true") return null;
 
@@ -87,22 +92,37 @@ function Dashboard() {
 
   // Submit daily earnings
   const submitEarnings = async () => {
-  if (!earnings || isNaN(Number(earnings))) return;
+  if (!earnings || isNaN(Number(earnings))) {
+    setShowValidationDialog(true);
+    return;
+  }
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const formattedToday = today.toISOString().split("T")[0];
+  const formattedYesterday = yesterday.toISOString().split("T")[0];
+
+  if (reportDate !== formattedToday && reportDate !== formattedYesterday) {
+    setShowDateValidationDialog(true); // trigger dialog
+    return;
+  }
 
   try {
     const response = await fetch("http://localhost:5000/api/earnings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeEmail: user.email, amount: Number(earnings) })
+      body: JSON.stringify({ 
+        employeeEmail: user.email, 
+        amount: Number(earnings),
+        date: reportDate
+      })
     });
 
     if (response.ok) {
       setEarnings("");
-
-      // Do NOT manually update charts or monthly earnings
-      // Just refetch data from the server
       await fetchData();
-
       setPage("reports");
     }
   } catch (err) {
@@ -115,22 +135,48 @@ function Dashboard() {
     setShowDeleteModal(true);
   };
 
- const confirmDelete = async () => {
-  try {
-    const response = await fetch(`http://localhost:5000/api/earnings/${selectedId}`, { method: "DELETE" });
-    if (response.ok) {
-      setShowDeleteModal(false);
-
-      // Reset the line graph immediately
-      setReportData(prev => ({ ...prev, dailyHistory: [], dailyEarnings: 0 }));
-
-      // Refetch data from server to ensure chart updates correctly
-      await fetchData();
+  const confirmDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/earnings/${selectedId}`, { method: "DELETE" });
+      if (response.ok) {
+        setShowDeleteModal(false);
+        setSelectedId(null);
+        await fetchData();
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
     }
-  } catch (err) {
-    console.error("Delete error:", err);
-  }
-};
+  };
+
+  const startEdit = (id) => {
+    setSubmissions(submissions.map(s =>
+      s._id === id ? { ...s, isEditing: true, editAmount: s.amount } : s
+    ));
+  };
+
+  const cancelEdit = (id) => {
+    setSubmissions(submissions.map(s =>
+      s._id === id ? { ...s, isEditing: false } : s
+    ));
+  };
+
+  const saveEdit = async (id, editAmount) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/earnings/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(editAmount) })
+      });
+      if (response.ok) {
+        setSubmissions(submissions.map(s =>
+          s._id === id ? { ...s, amount: Number(editAmount), isEditing: false } : s
+        ));
+        await fetchData();
+      }
+    } catch (err) {
+      console.error("Update error:", err);
+    }
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", fontFamily: "sans-serif" }}>
@@ -177,41 +223,32 @@ function Dashboard() {
         {/* Dashboard cards and charts */}
         {page === "dashboard" && (
           <>
-           <div style={{ padding: "40px", display: "flex", gap: "20px" }}>
+            <div style={{ padding: "40px", display: "flex", gap: "20px" }}>
+              <div style={{ flex: 1, background: "#4e73df", color: "#fff", padding: "25px", borderRadius: "10px" }}>
+                <div style={{ fontSize: "12px", fontWeight: "bold" }}>DAILY EARNINGS</div>
+                <div style={{ fontSize: "28px", fontWeight: "bold" }}>
+                  ₱{reportData.dailyEarnings.toLocaleString()}
+                </div>
+              </div>
 
-  <div style={{ padding: "40px", display: "flex", gap: "20px" }}>
-
-  <div style={{ flex: 1, background: "#4e73df", color: "#fff", padding: "25px", borderRadius: "10px" }}>
-    <div style={{ fontSize: "12px", fontWeight: "bold" }}>DAILY EARNINGS</div>
-    <div style={{ fontSize: "28px", fontWeight: "bold" }}>
-      ${reportData.dailyEarnings.toLocaleString()}
-    </div>
-  </div>
-
-  <TotalEarningsCard />
-
-</div>
-
-</div>
-          
+              <TotalEarningsCard />
+            </div>
+            
             <div style={{ padding: "0 40px 40px", display: "flex", gap: "20px", flexWrap: "wrap" }}>
-  <div
-    style={{
-      flex: 1,
-      background: "#fff",
-      padding: "20px",
-      borderRadius: "10px",
-      minWidth: "400px",
-      boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
-    }}
-  >
-    <DailyEarnings data={reportData.dailyHistory || []} />
-  </div>
-</div>
-
+              <div
+                style={{
+                  flex: 1,
+                  background: "#fff",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  minWidth: "400px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+                }}
+              >
+                <DailyEarnings data={reportData.dailyHistory || []} />
+              </div>
+            </div>
           </>
-
-          
         )}
 
         {page === "employees" && role === "admin" && <EmployeePage />}
@@ -222,6 +259,16 @@ function Dashboard() {
             <h2>Reports (Admin View)</h2>
             <div style={{ background: "#fff", padding: "20px", borderRadius: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
               <h3>Submit Daily Income</h3>
+              <div style={{ marginBottom: "10px" }}>
+                <label style={{ marginRight: "10px" }}>Select Date:</label>
+                <input 
+                  type="date" 
+                  value={reportDate} 
+                  onChange={e => setReportDate(e.target.value)} 
+                  style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ddd" }}
+                />
+              </div>
+
               <input
                 type="number"
                 placeholder="Daily Income"
@@ -249,11 +296,54 @@ function Dashboard() {
                     {submissions.map(item => (
                       <tr key={item._id} style={{ borderBottom: "1px solid #eee" }}>
                         <td style={{ padding: "12px" }}>{item.employeeEmail}</td>
-                        <td style={{ padding: "12px", fontWeight: "bold" }}>${item.amount.toLocaleString()}</td>
+                        <td style={{ padding: "12px", fontWeight: "bold" }}>
+                          {item.isEditing ? (
+                            <input
+                              type="number"
+                              value={item.editAmount}
+                              onChange={e => {
+                                const updated = submissions.map(s =>
+                                  s._id === item._id ? { ...s, editAmount: e.target.value } : s
+                                );
+                                setSubmissions(updated);
+                              }}
+                              style={{ width: "100px", padding: "4px" }}
+                            />
+                          ) : (
+                            `₱${item.amount.toLocaleString()}`
+                          )}
+                        </td>
                         <td style={{ padding: "12px" }}>{new Date(item.createdAt).toLocaleDateString()}</td>
                         {role === "admin" && (
                           <td style={{ padding: "12px", textAlign: "center" }}>
-                            <button onClick={() => openDeleteDialog(item._id)} style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer" }}><FaTrash /></button>
+                            {item.isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => saveEdit(item._id, item.editAmount)}
+                                  style={{ marginRight: "5px", cursor: "pointer", color: "#4e73df", background: "none", border: "none" }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => cancelEdit(item._id)}
+                                  style={{ cursor: "pointer", color: "#888", background: "none", border: "none" }}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEdit(item._id)}
+                                  style={{ marginRight: "5px", cursor: "pointer", color: "#1cc88a", background: "none", border: "none" }}
+                                >
+                                  Edit
+                                </button>
+                                <button onClick={() => openDeleteDialog(item._id)} style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer" }}>
+                                  <FaTrash />
+                                </button>
+                              </>
+                            )}
                           </td>
                         )}
                       </tr>
@@ -280,6 +370,66 @@ function Dashboard() {
             </div>
           </div>
         )}
+
+        {showValidationDialog && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
+            justifyContent: "center", alignItems: "center", zIndex: 1000
+          }}>
+            <div style={{
+              background: "white", padding: "30px", borderRadius: "10px",
+              width: "400px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+            }}>
+              <FaExclamationTriangle style={{ fontSize: "40px", color: "#f6c23e", marginBottom: "15px" }} />
+              <h3>Validation Error</h3>
+              <p style={{ color: "#666" }}>Please enter a value for daily income.</p>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "20px" }}>
+                <button
+                  onClick={() => setShowValidationDialog(false)}
+                  style={{
+                    padding: "10px 20px", borderRadius: "5px",
+                    border: "1px solid #ddd", cursor: "pointer"
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDateValidationDialog && (
+  <div style={{
+    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+    backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
+    justifyContent: "center", alignItems: "center", zIndex: 1000
+  }}>
+    <div style={{
+      background: "white", padding: "30px", borderRadius: "10px",
+      width: "400px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+    }}>
+      <FaExclamationTriangle style={{ fontSize: "40px", color: "#f6c23e", marginBottom: "15px" }} />
+      <h3>Date Validation Error</h3>
+      <p style={{ color: "#666" }}>
+        You can only submit a report for today or yesterday.
+      </p>
+      <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "20px" }}>
+        <button
+          onClick={() => setShowDateValidationDialog(false)}
+          style={{
+            padding: "10px 20px", borderRadius: "5px",
+            border: "1px solid #ddd", cursor: "pointer"
+          }}
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+        
       </main>
     </div>
   );

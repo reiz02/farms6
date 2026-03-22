@@ -26,6 +26,8 @@ function AdminRegister() {
 
   const navigate = useNavigate();
 
+  
+
   // ==========================================
   // 1. Check if an Admin is already registered
   // ==========================================
@@ -279,40 +281,79 @@ function AdminRegister() {
       )}
 
       {/* Verification Popup */}
-      {showCodePopup && (
-        <div className="dialog-overlay">
-          <div className="dialog-box verification-popup">
-            <h3>Identity Verification</h3>
-            <p>Please enter the code sent to <strong>{email}</strong></p>
-            <input
-              type="text"
-              placeholder="000000"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              maxLength={6}
-              className="code-input"
-              style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '4px' }}
-            />
-            <div className="popup-buttons" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button 
-                onClick={verifyAndRegisterAdmin} 
-                disabled={loading || verificationCode.length < 6}
-                className="verify-btn"
-                style={{ flex: 1 }}
-              >
-                {loading ? "Verifying..." : "Verify & Complete"}
-              </button>
-              <button 
-                onClick={() => setShowCodePopup(false)} 
-                className="cancel-btn"
-                style={{ flex: 1, backgroundColor: '#6b7280' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+{showCodePopup && (
+  <div className="dialog-overlay">
+    <div className="dialog-box verification-popup">
+      <h3>Identity Verification</h3>
+      <p>Please enter the code sent to <strong>{email}</strong></p>
+      <input
+        type="text"
+        placeholder="000000"
+        value={verificationCode}
+        onChange={(e) => setVerificationCode(e.target.value)}
+        maxLength={6}
+        className="code-input"
+        style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '4px' }}
+      />
+
+      {/* Resend Code Button */}
+      <div style={{ textAlign: 'center', marginTop: '10px' }}>
+        <button
+          type="button"
+          onClick={async () => {
+            if (!email.trim()) return; // Prevent sending if no email
+            try {
+              setLoading(true);
+              const res = await fetch("http://localhost:5000/api/send-code", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email.trim().toLowerCase() }),
+              });
+              await res.json();
+            } catch (err) {
+              console.error("Resend code error:", err);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#2563eb",
+            cursor: "pointer",
+            fontSize: "14px",
+            marginBottom: "10px"
+          }}
+        >
+          {loading ? "Resending..." : "Resend Code"}
+        </button>
+      </div>
+
+      <div className="popup-buttons" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+        <button 
+          onClick={verifyAndRegisterAdmin} 
+          disabled={loading || verificationCode.length < 6}
+          className="verify-btn"
+          style={{ flex: 1 }}
+        >
+          {loading ? "Verifying..." : "Verify & Complete"}
+        </button>
+        <button 
+          onClick={() => {
+            setShowCodePopup(false);
+            // Clear dialog to prevent any message from showing when cancelling
+            setDialog({ show: false, title: "", message: "" });
+          }} 
+          className="cancel-btn"
+          style={{ flex: 1, backgroundColor: '#6b7280' }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

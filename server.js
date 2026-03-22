@@ -97,6 +97,8 @@ const Earnings = mongoose.model("Earnings", earningsSchema);
 const reportSchema = new mongoose.Schema({
   dailyEarnings: { type: Number, default: 0 },
   dailyHistory: [{ date: String, total: Number }],
+  monthlyEarnings: { type: Number, default: 0 },
+  monthlyHistory: [{ month: Number, year: Number, total: Number }],
 });
 const Report = mongoose.model("Report", reportSchema);
 
@@ -121,7 +123,8 @@ const inventoryAccess = async (req, res, next) => {
 // ===========================
 // EMAIL / NODEMAILER SETUP
 // ===========================
-const verificationCodes = {}; 
+const verificationCodes = {}; // temporary store for codes
+ 
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -157,15 +160,23 @@ app.get("/api/check-admin", async (req, res) => {
 app.post("/api/send-code", async (req, res) => {
   try {
     const { email } = req.body;
+
+    // ✅ ADD THIS
+    const existing = await User.findOne({ email: email.trim().toLowerCase() });
+    if (existing) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
     const code = Math.floor(100000 + Math.random() * 900000);
     verificationCodes[email] = code;
 
     await transporter.sendMail({
-      from: "FarmOps System",
+      from: '"FarmOps System" <jazleemacalino03@gmail.com>',
       to: email,
       subject: "FarmOps Email Verification",
       text: `Your verification code is: ${code}`
     });
+
     res.json({ message: "Verification code sent" });
   } catch (err) {
     res.status(500).json({ error: "Failed to send email" });
@@ -209,6 +220,9 @@ app.post("/api/register-admin", async (req, res) => {
     }
     delete verificationCodes[email];
 
+    const existing = await User.findOne({ email: email.trim().toLowerCase() });
+    if (existing) return res.status(400).json({ error: "Email already exists" });
+
     const hashed = await bcrypt.hash(password, 10);
     const admin = new User({
       firstName, middleName, lastName, email: email.trim().toLowerCase(),
@@ -248,8 +262,10 @@ app.post("/api/login", async (req, res) => {
 });
 
 // ===========================
+// NEW: FORGOT PASSWORD ROUTES
 // FORGOT PASSWORD
 // ===========================
+
 app.post("/api/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -260,7 +276,7 @@ app.post("/api/forgot-password", async (req, res) => {
     verificationCodes[email] = code;
 
     await transporter.sendMail({
-      from: "FarmOps System",
+     from: '"FarmOps System" <jazleemacalino03@gmail.com>',
       to: email,
       subject: "Password Reset Code",
       text: `Your password reset code is: ${code}`
@@ -273,7 +289,11 @@ app.post("/api/forgot-password", async (req, res) => {
 
 app.post("/api/reset-password", async (req, res) => {
   try {
-    const { email, code, newPassword } = req.body;
+    const { email, code, newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: "Passwords do not match" });
+    }
     if (verificationCodes[email] != code) {
       return res.status(400).json({ error: "Invalid reset code" });
     }
@@ -356,32 +376,54 @@ app.delete("/api/products/:id", inventoryAccess, async (req, res) => {
 // EARNINGS
 // ===========================
 app.get("/api/earnings", async (req, res) => {
+  // All amounts returned are in PHP (₱)
   const history = await Earnings.find().sort({ createdAt: -1 });
   res.json(history);
 });
 
 app.post("/api/earnings", async (req, res) => {
   try {
-    const { employeeEmail, amount } = req.body;
-    const now = new Date();
-    const today = now.toLocaleDateString();
+    const { employeeEmail, amount, date } = req.body;
+    const now = date ? new Date(date) : new Date();
+    const today = now.toISOString().split("T")[0]; // use ISO date
+
+    if (isNaN(Number(amount))) return res.status(400).json({ error: "Invalid amount" });
 
     await new Earnings({
-      employeeEmail, amount: Number(amount),
-      month: now.getMonth() + 1, year: now.getFullYear(),
+      employeeEmail,
+      amount: Number(amount),
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      createdAt: now,
+      updatedAt: now
     }).save();
 
-    const report = await Report.findOneAndUpdate({}, { $inc: { dailyEarnings: Number(amount) } }, { upsert: true, new: true });
+    const report = await Report.findOneAndUpdate(
+      {},
+      { $inc: { dailyEarnings: Number(amount), monthlyEarnings: Number(amount) } },
+      { upsert: true, new: true }
+    );
 
-    const existingIndex = report.dailyHistory.findIndex(d => d.date === today);
-    if (existingIndex >= 0) {
-      report.dailyHistory[existingIndex].total += Number(amount);
-    } else {
-      report.dailyHistory.push({ date: today, total: Number(amount) });
-    }
+    if (!report.dailyHistory) report.dailyHistory = [];
+    if (!report.monthlyHistory) report.monthlyHistory = [];
+
+    // DAILY
+    const dailyIndex = report.dailyHistory.findIndex(d => d.date === today);
+    if (dailyIndex >= 0) report.dailyHistory[dailyIndex].total += Number(amount);
+    else report.dailyHistory.push({ date: today, total: Number(amount) });
+
+    // MONTHLY
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const monthlyIndex = report.monthlyHistory.findIndex(m => m.month === month && m.year === year);
+    if (monthlyIndex >= 0) report.monthlyHistory[monthlyIndex].total = report.monthlyEarnings;
+    else report.monthlyHistory.push({ month, year, total: report.monthlyEarnings });
+
     await report.save();
-    res.json({ message: "Income recorded" });
+
+    res.json({ message: "Income recorded (PHP)" });
   } catch (err) {
+    console.error("Submit earnings error:", err);
     res.status(500).json({ error: "Submit failed" });
   }
 });
@@ -393,15 +435,52 @@ app.delete("/api/earnings/:id", async (req, res) => {
     const all = await Earnings.find();
     const newDaily = all
       .filter((e) => new Date(e.createdAt).toLocaleDateString() === today)
-      .reduce((sum, e) => sum + e.amount, 0);
-    await Report.findOneAndUpdate({}, { dailyEarnings: newDaily });
-    res.json({ message: "Deleted and recalculated" });
+      .reduce((sum, e) => sum + e.amount, 0); // Sum in PHP
+    await Report.findOneAndUpdate({}, { dailyEarnings: newDaily }); // PHP
+    res.json({ message: "Deleted and recalculated (PHP)" });
   } catch (err) {
     res.status(500).json({ error: "Delete failed" });
   }
 });
 
 // ===========================
+// UPDATE EARNINGS (NEW)
+// ===========================
+app.put("/api/earnings/:id", async (req, res) => {
+  try {
+    const { amount } = req.body; // new amount in PHP
+    const earning = await Earnings.findById(req.params.id);
+    if (!earning) return res.status(404).json({ error: "Earning not found" });
+
+    const oldAmount = earning.amount;
+    earning.amount = Number(amount);
+    await earning.save();
+
+    // Update the daily report
+    const report = await Report.findOne();
+    if (report) {
+      const dateKey = new Date(earning.createdAt).toLocaleDateString();
+      const index = report.dailyHistory.findIndex(d => d.date === dateKey);
+      if (index >= 0) {
+        report.dailyHistory[index].total = report.dailyHistory[index].total - oldAmount + Number(amount);
+      }
+      // If the date matches today, update dailyEarnings
+      const today = new Date().toLocaleDateString();
+      if (dateKey === today) {
+        report.dailyEarnings = report.dailyHistory[index].total;
+      }
+      await report.save();
+    }
+
+    res.json({ message: "Earning updated successfully", earning });
+  } catch (err) {
+    console.error("Update earning failed:", err);
+    res.status(500).json({ error: "Failed to update earning" });
+  }
+});
+
+// ===========================
+// DASHBOARD / REPORTS
 // REPORTS
 // ===========================
 app.get("/api/reports", async (req, res) => {
@@ -409,22 +488,25 @@ app.get("/api/reports", async (req, res) => {
     const today = new Date().toLocaleDateString();
     let report = await Report.findOne();
     if (!report) {
-      report = new Report({ dailyEarnings: 0, dailyHistory: [] });
+      report = new Report({ dailyEarnings: 0, dailyHistory: [] }); // PHP
       await report.save();
     }
     const lastEntry = report.dailyHistory[report.dailyHistory.length - 1];
     if (!lastEntry || lastEntry.date !== today) {
-      report.dailyHistory.push({ date: today, total: 0 });
-      report.dailyEarnings = 0;
+      report.dailyHistory.push({ date: today, total: 0 }); // PHP
+      report.dailyEarnings = 0; // PHP
       await report.save();
     }
+    // Daily earnings and history amounts are in PHP
     res.json({ dailyEarnings: report.dailyEarnings, dailyHistory: report.dailyHistory });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch reports" });
   }
 });
 
+// ===========================
 // CRON JOB
+// ===========================
 cron.schedule("0 0 * * *", async () => {
   const report = await Report.findOne();
   if (report) {
@@ -435,5 +517,23 @@ cron.schedule("0 0 * * *", async () => {
   }
 }, { timezone: "Asia/Manila" });
 
+cron.schedule("0 0 1 * *", async () => {
+  const report = await Report.findOne();
+  if (report) {
+    // Save current month's total to history
+    const now = new Date();
+    const month = now.getMonth(); // last month
+    const year = now.getFullYear();
+
+    // Already tracked in monthlyHistory, just reset monthlyEarnings
+    report.monthlyEarnings = 0;
+    await report.save();
+    console.log("Monthly earnings reset to 0");
+  }
+}, { timezone: "Asia/Manila" });
+
+// ===========================
+// SERVER START
+// ===========================
 app.get("/", (req, res) => res.send("🚀 FarmOps Server Running"));
 app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));

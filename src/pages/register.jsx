@@ -21,6 +21,7 @@ function Register() {
 
   // Status & UI States
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [showCodePopup, setShowCodePopup] = useState(false);
   const [dialog, setDialog] = useState({
@@ -38,12 +39,12 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Basic Field Validation (DAGDAG: Isinama ang !section sa check)
+    // 1. Basic Field Validation
     if (!firstName || !lastName || !email || !password || !confirmPassword || !section) {
       setDialog({
         show: true,
         title: "Error",
-        message: "Pakisagutan ang lahat ng required fields, kabilang ang Assigned Section."
+        message: "Please fill out all required fields, including Assigned Section."
       });
       return;
     }
@@ -53,7 +54,7 @@ function Register() {
       setDialog({
         show: true,
         title: "Error",
-        message: "Hindi magkatugma ang password!"
+        message: "Passwords do not match!"
       });
       return;
     }
@@ -77,13 +78,13 @@ function Register() {
         setDialog({
           show: true,
           title: "Verification Sent",
-          message: "Isang code ang ipinadala sa iyong email para sa seguridad."
+          message: "A verification code has been sent to your email."
         });
       } else {
         setDialog({
           show: true,
           title: "Error",
-          message: data.error || "Hindi maipadala ang code."
+          message: data.error || "Failed to send verification code."
         });
       }
     } catch (err) {
@@ -91,17 +92,60 @@ function Register() {
       setDialog({
         show: true,
         title: "Server Error",
-        message: "Hindi makakonekta sa server."
+        message: "Could not connect to the server."
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleResendCode = async () => {
+    if (!email.trim()) {
+      setDialog({
+        show: true,
+        title: "Error",
+        message: "Please enter your email before resending the verification code."
+      });
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setDialog({
+          show: true,
+          title: "Success",
+          message: "A new verification code has been sent successfully."
+        });
+      } else {
+        setDialog({
+          show: true,
+          title: "Error",
+          message: data.error || "Failed to send verification code."
+        });
+      }
+    } catch (err) {
+      console.error("Resend code error:", err);
+      setDialog({
+        show: true,
+        title: "Server Error",
+        message: "Could not connect to the server."
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const verifyAndRegister = async () => {
     setLoading(true);
     try {
-      // 4. Final Registration Step
       const response = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,7 +166,7 @@ function Register() {
         setDialog({
           show: true,
           title: "Success",
-          message: "Account created! Mag-antay ng approval mula sa Admin."
+          message: "Account created! Please wait for admin approval."
         });
         setShowCodePopup(false);
         setTimeout(() => {
@@ -132,7 +176,7 @@ function Register() {
         setDialog({
           show: true,
           title: "Error",
-          message: data.error || "Mali ang verification code."
+          message: data.error || "Incorrect verification code."
         });
       }
     } catch (err) {
@@ -140,7 +184,7 @@ function Register() {
       setDialog({
         show: true,
         title: "Error",
-        message: "Nagkaroon ng problema sa pag-save."
+        message: "There was a problem saving your account."
       });
     } finally {
       setLoading(false);
@@ -185,7 +229,6 @@ function Register() {
             required
           />
 
-          {/* Password Field with Toggle */}
           <div className="password-field-container" style={{ position: "relative", marginBottom: "15px" }}>
             <input
               type={showPassword ? "text" : "password"}
@@ -203,7 +246,6 @@ function Register() {
             </span>
           </div>
 
-          {/* Confirm Password Field with Toggle */}
           <div className="password-field-container" style={{ position: "relative", marginBottom: "15px" }}>
             <input
               type={showConfirmPassword ? "text" : "password"}
@@ -228,7 +270,6 @@ function Register() {
               onChange={(e) => setSection(e.target.value)}
               required
             >
-              {/* BAGUGO: Placeholder option na hindi mapipili muli */}
               <option value="" disabled hidden>Select Section</option>
               <option value="Inventory">Inventory</option>
               <option value="Finance">Finance</option>
@@ -245,7 +286,6 @@ function Register() {
         </p>
       </div>
 
-      {/* Main Alert Dialog */}
       {dialog.show && (
         <div className="dialog-overlay">
           <div className="dialog-box">
@@ -256,12 +296,11 @@ function Register() {
         </div>
       )}
 
-      {/* OTP Verification Popup */}
       {showCodePopup && (
         <div className="dialog-overlay">
           <div className="dialog-box verification-popup">
             <h3>Email Verification</h3>
-            <p>Ilagay ang 6-digit code na ipinadala namin sa iyong inbox.</p>
+            <p>Please input the 6-digit code</p>
             <input
               type="text"
               placeholder="######"
@@ -270,12 +309,39 @@ function Register() {
               maxLength={6}
               className="otp-input"
             />
-            <div className="popup-actions">
-              <button onClick={verifyAndRegister} className="verify-btn" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Register"}
+
+            <div style={{ textAlign: "center", marginTop: "10px" }}>
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendLoading}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#2563eb",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                {resendLoading ? "Resending..." : "Resend Code"}
               </button>
-              <button onClick={() => setShowCodePopup(false)} className="cancel-btn">
-                Cancel
+            </div>
+          <div className="popup-actions">
+            <button
+              onClick={verifyAndRegister}
+              className="verify-btn"
+              disabled={loading}
+              >
+               {loading ? "Verifying..." : "Verify & Register"}
+              </button>
+            <button
+                onClick={() => {
+                setShowCodePopup(false);
+                setDialog({ show: false, title: "", message: "" });
+                }}
+              className="cancel-btn"
+            >
+               Cancel
               </button>
             </div>
           </div>

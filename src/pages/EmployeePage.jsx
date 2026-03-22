@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
+import "./EmployeePage.css";
 
 function EmployeePage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [dialog, setDialog] = useState({ show: false, employeeId: null });
 
   // Fetch all employees from backend
   const fetchEmployees = async () => {
@@ -44,7 +47,6 @@ function EmployeePage() {
 
   // Delete employee
   const deleteEmployee = async (id) => {
-    if (!window.confirm("Delete this employee?")) return;
     try {
       const res = await fetch(`http://localhost:5000/api/employees/${id}`, { method: "DELETE" });
       if (!res.ok) return console.error("Delete failed");
@@ -89,7 +91,7 @@ function EmployeePage() {
                         Approve
                       </button>
                     )}
-                    <button className="delete-btn" onClick={() => deleteEmployee(emp._id)}>
+                    <button className="delete-btn" onClick={() => setDialog({ show: true, employeeId: emp._id })}>
                       Delete
                     </button>
                   </td>
@@ -100,123 +102,32 @@ function EmployeePage() {
         )}
       </div>
 
-      <style jsx>{`
-        .employee-page {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          padding: 30px;
-          background: #f0f2f5;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        h1 {
-          margin-bottom: 25px;
-          color: #2c3e50;
-        }
-
-        .employee-card {
-          width: 100%;
-          max-width: 1200px;
-          background: #fff;
-          padding: 25px;
-          border-radius: 12px;
-          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-        }
-
-        .status-text {
-          text-align: center;
-          color: #7f8c8d;
-          padding: 20px 0;
-        }
-
-        .employee-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .employee-table th,
-        .employee-table td {
-          padding: 12px 15px;
-          text-align: center;
-          border-bottom: 1px solid #ecf0f1;
-        }
-
-        .employee-table th {
-          background-color: #34495e;
-          color: #fff;
-          font-weight: 500;
-        }
-
-        .employee-table tr:hover {
-          background-color: #f1f2f6;
-        }
-
-        .status-badge {
-          padding: 5px 10px;
-          border-radius: 12px;
-          color: #fff;
-          font-weight: bold;
-          text-transform: capitalize;
-          font-size: 0.85rem;
-        }
-
-        .status-badge.approved {
-          background-color: #27ae60;
-        }
-
-        .status-badge.pending {
-          background-color: #f39c12;
-        }
-
-        .actions-cell {
-          display: flex;
-          justify-content: center;
-          gap: 10px; /* spacing between buttons */
-        }
-
-        button {
-          padding: 6px 14px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: transform 0.1s, background 0.2s;
-        }
-
-        .approve-btn {
-          background-color: #27ae60;
-          color: #fff;
-        }
-
-        .approve-btn:hover {
-          transform: scale(1.05);
-          background-color: #2ecc71;
-        }
-
-        .delete-btn {
-          background-color: #c0392b;
-          color: #fff;
-        }
-
-        .delete-btn:hover {
-          transform: scale(1.05);
-          background-color: #e74c3c;
-        }
-
-        @media (max-width: 768px) {
-          .employee-table th,
-          .employee-table td {
-            font-size: 0.9rem;
-            padding: 10px;
-          }
-
-          button {
-            padding: 5px 10px;
-          }
-        }
-      `}</style>
+      {/* Delete Confirmation Dialog */}
+      {dialog.show && (
+        <div className="dialog-overlay">
+          <div className="dialog-box">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete this employee?</p>
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button
+                onClick={() => {
+                  deleteEmployee(dialog.employeeId);
+                  setDialog({ show: false, employeeId: null });
+                }}
+                style={{ flex: 1, backgroundColor: "#e74c3c", color: "#fff", border: "none", padding: "8px", borderRadius: "6px" }}
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setDialog({ show: false, employeeId: null })}
+                style={{ flex: 1, backgroundColor: "#7f8c8d", color: "#fff", border: "none", padding: "8px", borderRadius: "6px" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
