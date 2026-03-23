@@ -1,0 +1,701 @@
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react"; 
+import "./register.css";
+
+function Register() {
+  // --- FORM STATES ---
+  const [firstName, setFname] = useState("");
+  const [middleName, setMname] = useState("");
+  const [lastName, setLname] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPass] = useState("");
+  const [confirmPassword, setConfirmPass] = useState("");
+  const [section, setSection] = useState("");
+
+  // --- UI STATES ---
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showCodePopup, setShowCodePopup] = useState(false);
+  
+  // --- DIALOG STATE ---
+  const [dialog, setDialog] = useState({
+    show: false,
+    title: "",
+    message: "",
+    type: "info" // error, success, or info
+  });
+
+  const navigate = useNavigate();
+
+  const closeDialog = () => {
+    setDialog({ ...dialog, show: false });
+  };
+
+  // --- STEP 1: REQUEST VERIFICATION CODE ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Basic Validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !section) {
+      setDialog({
+        show: true,
+        title: "Error",
+        message: "Please fill out all required fields, including Assigned Section.",
+        type: "error"
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setDialog({
+        show: true,
+        title: "Error",
+        message: "Passwords do not match!",
+        type: "error"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowCodePopup(true);
+        setDialog({
+          show: true,
+          title: "Verification Sent",
+          message: "A verification code has been sent to your email.",
+          type: "success"
+        });
+      } else {
+        setDialog({
+          show: true,
+          title: "Error",
+          message: data.error || "Failed to send verification code.",
+          type: "error"
+        });
+      }
+    } catch (err) {
+      setDialog({
+        show: true,
+        title: "Server Error",
+        message: "Could not connect to the server.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- RESEND OTP LOGIC ---
+  const handleResendCode = async () => {
+    setResendLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      if (response.ok) {
+        setDialog({
+          show: true,
+          title: "Success",
+          message: "A new code has been sent successfully.",
+          type: "success"
+        });
+      }
+    } catch (err) {
+      setDialog({
+        show: true,
+        title: "Error",
+        message: "Failed to resend code.",
+        type: "error"
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  // --- STEP 2: VERIFY CODE AND COMPLETE REGISTRATION ---
+  const verifyAndRegister = async () => {
+    if (!verificationCode) {
+      setDialog({ show: true, title: "Error", message: "Please enter the code.", type: "error" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          middleName: middleName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          section,
+          code: verificationCode
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setDialog({
+          show: true,
+          title: "Success",
+          message: "Account created! Please wait for admin approval.",
+          type: "success"
+        });
+        setShowCodePopup(false);
+        setTimeout(() => {
+          navigate("/");
+        }, 3000);
+      } else {
+        setDialog({
+          show: true,
+          title: "Error",
+          message: data.error || "Incorrect verification code.",
+          type: "error"
+        });
+      }
+    } catch (err) {
+      setDialog({
+        show: true,
+        title: "Error",
+        message: "There was a problem saving your account.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-page-wrapper">
+      <div className="register-container" style={{ maxWidth: "550px" }}>
+        
+        {/* Header Section */}
+        <div className="login-header">
+          <h1 className="brand-logo">Farm<span>Ops</span></h1>
+          <h2>Employee Registration</h2>
+          <p className="subtitle">All accounts require admin approval</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Name Row */}
+          <div className="input-row">
+            <div className="input-group">
+              <label>First Name</label>
+              <input
+                type="text"
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFname(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label>Last Name</label>
+              <input
+                type="text"
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLname(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Middle Name (Optional)</label>
+            <input
+              type="text"
+              placeholder="Optional"
+              value={middleName}
+              onChange={(e) => setMname(e.target.value)}
+            />
+          </div>
+
+          {/* Email */}
+          <div className="input-group">
+            <label>Email Address</label>
+            <input
+              type="email"
+              placeholder="example@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Password */}
+          <div className="input-group">
+            <label>Password</label>
+            <div className="password-field-container" style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPass(e.target.value)}
+                required
+              />
+              <span 
+                className="eye-icon-trigger"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#666" }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div className="input-group">
+            <label>Confirm Password</label>
+            <div className="password-field-container" style={{ position: "relative" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPass(e.target.value)}
+                required
+              />
+              <span 
+                className="eye-icon-trigger"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#666" }}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+            </div>
+          </div>
+
+          {/* Section Selection */}
+          <div className="input-group">
+            <label>Assigned Section</label>
+            <select
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              required
+            >
+              <option value="" disabled hidden>Select Section</option>
+              <option value="Inventory">Inventory</option>
+              <option value="Finance">Finance</option>
+            </select>
+          </div>
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Processing..." : "Create Account"}
+          </button>
+        </form>
+
+        <p className="footer-text">
+          Already have an account? <Link to="/" className="register-link">Login here</Link>
+        </p>
+
+        {/* Global Dialog Modal */}
+        {dialog.show && (
+          <div className="dialog-overlay">
+            <div className="dialog-box">
+              <h3 className={dialog.type}>{dialog.title}</h3>
+              <p>{dialog.message}</p>
+              <button onClick={closeDialog} className="dialog-close-btn">OK</button>
+            </div>
+          </div>
+        )}
+
+        {/* OTP Verification Popup */}
+        {showCodePopup && (
+          <div className="dialog-overlay">
+            <div className="dialog-box verification-popup">
+              <h3>Email Verification</h3>
+              <p>Please enter the 6-digit code sent to your email.</p>
+              
+              <input
+                type="text"
+                placeholder="######"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                maxLength={6}
+                className="otp-input-field"
+                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', fontWeight: 'bold' }}
+              />
+
+              <div className="popup-actions" style={{ marginTop: '20px' }}>
+                <button onClick={verifyAndRegister} className="login-btn" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify & Register"}
+                </button>
+                
+                <button 
+                  onClick={handleResendCode} 
+                  disabled={resendLoading}
+                  className="resend-btn"
+                  style={{ background: 'none', border: 'none', color: '#438a5e', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' }}
+                >
+                  {resendLoading ? "Resending..." : "Resend Code"}
+                </button>
+
+                <button 
+                  onClick={() => setShowCodePopup(false)} 
+                  className="cancel-link"
+                  style={{ display: 'block', margin: '10px auto', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Register;
+
+
+
+
+
+
+
+
+
+
+
+
+css
+
+
+
+/* register.css */
+
+/* ===== 1. PAGE WRAPPER ===== */
+.login-page-wrapper {
+  /* Ang background ay galing na sa App.css, kaya transparent na ito */
+  background: transparent !important;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  z-index: 2; /* Para nasa ibabaw ng App-overlay at background shapes */
+}
+
+/* ===== 2. MODERN WHITE CARD (Glassmorphism hint) ===== */
+.register-container, .login-container {
+  /* Ultra-pure white na may subtle transparency */
+  background: rgba(255, 255, 255, 0.98) !important;
+  width: 100%;
+  max-width: 480px; /* Mas compact */
+  padding: 35px 40px;
+  border-radius: 28px; /* Mas rounded, mas modern */
+  
+  /* Softer and wider shadow for premium look */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  
+  text-align: center;
+  position: relative;
+  
+  /* Prevent cutting off elements while keeping it compact */
+  max-height: 95vh;
+  overflow-y: auto;
+  
+  /* Initial state para sa Entrance Animation */
+  opacity: 0;
+  transform: translateY(30px);
+  animation: cardEntrance 0.6s ease-out forwards;
+}
+
+/* Custom Scrollbar para sa loob ng card (para sa maliit na screens) */
+.register-container::-webkit-scrollbar {
+  width: 5px;
+}
+.register-container::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* ===== 3. LOGO & HEADERS ===== */
+.login-header {
+  margin-bottom: 25px;
+}
+
+.brand-logo {
+  font-size: 34px;
+  font-weight: 800;
+  color: #438a5e;
+  letter-spacing: -1.5px;
+  margin: 0;
+}
+
+.brand-logo span { color: #2c3e50; }
+
+.login-header h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-top: 5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+/* ===== 4. FORM LAYOUT & COMPACT INPUTS ===== */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 14px; /* Dikit-dikit para magkasya */
+  width: 100%;
+  
+  /* Initial state para sa staggered input animation */
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeUpStaggered 0.5s ease-out forwards;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 6px;
+  margin-left: 3px;
+}
+
+/* ===== 5. INPUTS STYLE (Clean & Modern) ===== */
+.input-group input,
+.input-group select {
+  width: 100%;
+  height: 46px; /* Reduced from 50px */
+  padding: 10px 16px;
+  font-size: 14px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  appearance: none;
+}
+
+/* Modern focus state with FarmOps theme */
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #438a5e;
+  background-color: #ffffff;
+  /* Mas modern na focus shadow */
+  box-shadow: 0 0 0 4px rgba(67, 138, 94, 0.12);
+}
+
+/* Fix para sa Chrome Autofill */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #f9fafb inset !important;
+  border-radius: 12px;
+}
+
+/* ===== 6. PASSWORD EYE ICON ===== */
+.password-field-container {
+  position: relative;
+}
+
+.eye-icon-trigger {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 5px;
+}
+
+.eye-icon-trigger:hover {
+  color: #438a5e;
+}
+
+/* ===== 7. PREMIUM BUTTONS ===== */
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  /* FarmOps Deep Green Gradient for premium look */
+  background: linear-gradient(135deg, #234d37 0%, #1a3a2a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+  
+  /* Initial state for staggered entry */
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeUpStaggered 0.5s ease-out forwards;
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, #1d412e 0%, #132a1f 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(26, 58, 42, 0.25);
+}
+
+.login-btn:active {
+  transform: scale(0.99);
+}
+
+/* ===== 8. FOOTER LINKS ===== */
+.footer-text, .footer-links {
+  margin-top: 25px;
+  font-size: 13px;
+  color: #6b7280;
+  
+  /* Staggered entry animation */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUpStaggered 0.4s ease-out forwards;
+}
+
+.register-link {
+  color: #438a5e;
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 5px;
+  transition: color 0.2s;
+}
+
+.register-link:hover {
+  color: #2a5d43;
+  text-decoration: underline;
+}
+
+/* ===== 9. OTP POPUP (Premium Modals) ===== */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px); /* Mas blur ang background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.dialog-box {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  
+  /* Popup entrance animation */
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+  animation: popupEntrance 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.otp-input-field {
+  width: 100%;
+  height: 60px;
+  font-size: 32px;
+  letter-spacing: 10px;
+  font-weight: 800;
+  text-align: center;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  margin: 20px 0;
+  background: #f8fafc;
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: #438a5e;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+/* ===== 10. ADVANCED KEYFRAMES ANIMATIONS ===== */
+
+/* Card entrance payuko */
+@keyframes cardEntrance {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered fade-up entry ( JS handles the delay) */
+@keyframes fadeUpStaggered {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Popup entrance (may kaunting bounce) */
+@keyframes popupEntrance {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Slide Up default animation */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 11. MOBILE RESPONSIVE QUERIES ===== */
+@media (max-width: 500px) {
+  .input-row {
+    grid-template-columns: 1fr; /* Stack names on mobile */
+    gap: 0;
+  }
+  .register-container {
+    padding: 25px 20px;
+    margin: 10px;
+  }
+}
+
+
+
+
+
+
+
+
