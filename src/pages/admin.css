@@ -1,0 +1,210 @@
+/* =========================================
+   1. PAGE WRAPPER & BACKGROUND
+   ========================================= */
+.admin-setup-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Ginawang transparent para lumabas ang background image mula sa body */
+  background: transparent; 
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   2. MODERN GLASS CARD (FarmOps Style)
+   ========================================= */
+.admin-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 40px;
+  border-radius: 28px;
+  
+  /* White Glass Effect - 95% opacity para malinis tignan */
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  
+  /* Border and Shadow */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  
+  text-align: center;
+  position: relative;
+  animation: cardEntrance 0.6s ease-out;
+}
+
+/* =========================================
+   3. HEADERS & ICONS
+   ========================================= */
+.admin-card h2 {
+  margin: 10px 0 5px 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #1d3a2a; /* FarmOps Green */
+  letter-spacing: -1px;
+}
+
+.admin-card p {
+  font-size: 15px;
+  color: #4b5563;
+  margin-bottom: 25px;
+}
+
+/* =========================================
+   4. FORM & INPUTS (High Visibility)
+   ========================================= */
+.admin-card form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+/* Input Styles */
+.admin-card input {
+  width: 100%;
+  height: 52px; /* Bahagyang mas malaki para sa readability */
+  margin-bottom: 15px;
+  padding: 12px 16px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1.5px solid #d1d5db;
+  background-color: #ffffff !important;
+  color: #111827 !important; /* Solid black text para kitang-kita */
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.admin-card input::placeholder {
+  color: #9ca3af;
+}
+
+.admin-card input:focus {
+  outline: none;
+  border-color: #438a5e; /* FarmOps Green focus */
+  box-shadow: 0 0 0 4px rgba(67, 138, 94, 0.15);
+}
+
+/* Password Eye Wrapper Fix */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.password-wrapper input {
+  margin-bottom: 0px !important;
+}
+
+/* =========================================
+   5. BUTTONS (FarmOps Green)
+   ========================================= */
+.admin-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  margin-top: 10px;
+  background: #1d3a2a !important; 
+  color: #ffffff !important;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.admin-btn:hover {
+  background: #152c20 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.admin-btn:disabled {
+  background: #9ca3af !important;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================
+   6. DIALOGS & POPUPS (Verification)
+   ========================================= */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6); /* Mas madilim para mag-pop ang modal */
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-box {
+  background: #ffffff;
+  padding: 35px;
+  border-radius: 24px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.dialog-box h3 {
+  color: #111827;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.dialog-box button {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  background: #1d3a2a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background 0.2s;
+}
+
+.dialog-box button:hover {
+  background: #152c20;
+}
+
+/* OTP Specific Styles */
+.code-input {
+  border: 2px solid #438a5e !important;
+  background: #f9fafb !important;
+  font-weight: 800;
+  color: #1d3a2a !important;
+  text-align: center;
+}
+
+.verify-btn {
+  background: #438a5e !important;
+}
+
+.cancel-btn {
+  background: #6b7280 !important;
+}
+
+/* =========================================
+   7. KEYFRAMES
+   ========================================= */
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .admin-card {
+    padding: 30px 20px;
+  }
+  .admin-card h2 {
+    font-size: 24px;
+  }
+}
